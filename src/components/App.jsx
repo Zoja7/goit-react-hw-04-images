@@ -20,65 +20,66 @@ export const App = () => {
   const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
-    if (!searchQuery) return;
+    if (searchQuery === null) return;
+
     const fetchData = async () => {
       setIsLoading(true);
-      const {
-        images,
-        totalPages,
-        error: fetchError,
-      } = await FetchImages(searchQuery, page);
-      if (fetchError) {
-        setError(fetchError);
-      } else {
-        setImages(prevImages => [...prevImages, ...images]);
-        setPage(prevPage => prevPage + 1);
-        setTotalPages(totalPages);
+
+      try {
+        const {
+          images,
+          totalPages,
+          error: fetchError,
+        } = await FetchImages(searchQuery, page);
+
+        if (fetchError) {
+          setError({ message: fetchError });
+        } else {
+          setImages(prevImages => [...prevImages, ...images]);
+          setTotalPages(totalPages);
+        }
+      } catch (error) {
+        setError({ message: error.message });
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
+
     fetchData();
   }, [searchQuery, page]);
 
   const loadMore = () => {
-    // this.setState(prevState => ({ currentPage: prevState.currentPage + 1 }));
     setPage(prevPage => prevPage + 1);
   };
 
   const openModal = largeImageURL => {
-    // this.setState({
-    //   isOpenModal: true,
-    //   modalImage: largeImageURL,
-    // });
     setIsOpenModal(true);
     setModalImage(largeImageURL);
   };
 
   const closeModal = () => {
-    // this.setState({
-    //   isOpenModal: false,
-    //   images: this.state.images,
-    // });
     setImages(images);
-    isOpenModal(false);
+    setIsOpenModal(false);
   };
 
   const handelSubmitForm = query => {
     if (searchQuery === query) {
       return alert(`You are looking for ${query} now!`);
-      // this.setState({
-      //   searchQuery: searchQuery.toLowerCase(),
-      //   images: [],
-      //   currentPage: 1,
-      // });
     }
     setSearchQuery(query.toLowerCase());
     setImages([]);
     setPage(1);
   };
+
+  const handleOverlayClick = event => {
+    if (event.target === event.currentTarget) {
+      closeModal();
+    }
+  };
   const ShownLoadMoreButton = () => {
     return (
       searchQuery !== null &&
+      // page < Math.ceil(totalPages / 12) &&
       page < totalPages &&
       images &&
       images !== null &&
@@ -103,7 +104,13 @@ export const App = () => {
         />
       )}
       {ShownLoadMoreButton() && <Button onClick={loadMore} />}
-      {isOpenModal && <Modal largeImage={modalImage} closeModal={closeModal} />}
+      {isOpenModal && (
+        <Modal
+          largeImage={modalImage}
+          closeModal={closeModal}
+          handleOverlayClick={handleOverlayClick}
+        />
+      )}
     </StyledApp>
   );
 };
